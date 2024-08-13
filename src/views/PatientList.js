@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import useFetch from '../config/useFetch';
 import API_URLS from '../config/apiConfig';
 import { useNavigate } from "react-router-dom";
@@ -6,37 +6,47 @@ import { useNavigate } from "react-router-dom";
 const PatientList = () => {
     const navigate = useNavigate();
     const { data: patientsData, error: patientsError, isPending: patientsIsPending } = useFetch(API_URLS.getPatients);
-
-    // State for filter criteria
-    const [filterBy, setFilterBy] = useState("name"); // Default to filtering by name
+    const [cities, setCities] = useState([]);
+    const [filterBy, setFilterBy] = useState("name");
     const [filterValue, setFilterValue] = useState("");
+
+    useEffect(() => {
+        fetch(API_URLS.getCities)
+            .then(response => response.json())
+            .then(data => {
+                if (data.result) {
+                    setCities(data.result);
+                } else {
+                    console.error('Unexpected data format:', data);
+                }
+            })
+            .catch(error => console.error('Error fetching cities:', error));
+    }, []);
 
     const handleDelete = (id) => {
         fetch(`${API_URLS.getPatients}/${id}`, {
             method: 'DELETE',
         })
             .then(() => {
-                // Optionally refetch the patient list after deletion
                 window.location.reload();
             })
             .catch(error => console.error('Error deleting patient:', error));
     };
 
     const handleFilterChange = (e) => {
-        setFilterBy(e.target.value); // Update filter criteria
-        setFilterValue(""); // Clear filter value on criteria change
+        setFilterBy(e.target.value);
+        setFilterValue("");
     };
 
     const handleFilterValueChange = (e) => {
-        setFilterValue(e.target.value); // Update filter value
+        setFilterValue(e.target.value);
     };
 
-    // Apply filter to patientsData
     const filteredPatientsData = patientsData?.filter(patient => {
         if (filterBy === "name") {
             return patient.name.toLowerCase().includes(filterValue.toLowerCase());
         } else if (filterBy === "status") {
-            // If "All" is selected or filterValue is empty, show all patients
+
             if (filterValue === "" || filterValue === "all") {
                 return true;
             }
@@ -44,6 +54,11 @@ const PatientList = () => {
         }
         return true;
     });
+
+    const cityMap = cities.reduce((map, city) => {
+        map[city.id] = city.name;
+        return map;
+    }, {});
 
     return (
         <div id="patient-list" className="container mx-auto p-8">
@@ -113,7 +128,7 @@ const PatientList = () => {
                                 </td>
                                 <td className="p-4">{patient.address}</td>
                                 <td className="p-4">{new Date(patient.birthdate).toLocaleDateString()}</td>
-                                <td className="p-4">{patient.city_id}</td>
+                                <td className="p-4">{cityMap[patient.city_id] || 'Unknown'}</td>
                                 <td className="p-4">{patient.gender}</td>
                                 <td className="p-4">
                                     <span className={`py-1 px-3 rounded-full text-sm ${patient.status === "1" ? "bg-green-600 text-white" : "bg-red-600 text-white"}`}>

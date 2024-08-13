@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import API_URLS from '../config/apiConfig';
 
 const PatientForm = () => {
-    const { id } = useParams(); // Get the patient ID from the URL (if any)
+    const { id } = useParams();
     const navigate = useNavigate();
     const [patientData, setPatientData] = useState({
         name: '',
@@ -11,17 +11,33 @@ const PatientForm = () => {
         birthdate: '',
         city_id: '',
         gender: '',
-        status: ''
+        status: '',
+        created_at: '',
+        updated_at: '',
+        deleted_at: null
     });
+    const [cities, setCities] = useState([]);
+
+    useEffect(() => {
+        fetch(API_URLS.getCities)
+            .then(response => response.json())
+            .then(data => {
+                if (data.result) {
+                    setCities(data.result);
+                } else {
+                    console.error('Unexpected data format:', data);
+                }
+            })
+            .catch(error => console.error('Error fetching cities:', error));
+    }, []);
 
     useEffect(() => {
         if (id) {
-            // Fetch the patient data if in edit mode
             fetch(`${API_URLS.getPatients}/${id}`)
                 .then(response => response.json())
                 .then(data => {
                     if (data.result && data.result.length > 0) {
-                        setPatientData(data.result[0]); // Extract the patient data from the result array
+                        setPatientData(data.result[0]);
                     } else {
                         console.error('Unexpected data format:', data);
                     }
@@ -39,33 +55,41 @@ const PatientForm = () => {
 
     const handleSubmit = (e) => {
         e.preventDefault();
-    
+
+        const now = new Date().toISOString();
+
+        const updatedData = {
+            ...patientData,
+            updated_at: now,
+            created_at: id ? patientData.created_at : now,
+            deleted_at: id ? patientData.deleted_at : null
+        };
+
+        updatedData.status = Number(updatedData.status);
+
         const url = id ? `${API_URLS.getPatients}/${id}` : API_URLS.getPatients;
-        const method = id ? 'PUT' : 'POST'; // PUT for editing, POST for adding
-    
-        // Wrap the patientData in an array
-        const payload = [patientData];
-    
-        console.log('Submitting data:', payload); // Log the data being submitted
-    
+        const method = id ? 'PUT' : 'POST';
+
+        const payload = [updatedData];
+
+        console.log('Submitting data:', payload);
+
         fetch(url, {
             method,
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(payload), // Send data as an array
+            body: JSON.stringify(payload),
         })
             .then(response => response.json())
             .then(result => {
-                console.log('API Response:', result); // Log the API response
-                navigate('/patient-list'); // Redirect to the patient list after saving
+                console.log('API Response:', result);
+                navigate('/patient-list');
             })
             .catch(error => {
                 console.error('Error saving patient:', error);
             });
     };
-    
-    
 
     return (
         <div id="patient-form" className="container mx-auto p-8">
@@ -105,13 +129,19 @@ const PatientForm = () => {
                 </div>
                 <div className="mb-4">
                     <label className="block mb-2">City</label>
-                    <input
-                        type="text"
+                    <select
                         name="city_id"
                         value={patientData.city_id || ''}
                         onChange={handleChange}
                         className="w-full p-2 bg-gray-700 rounded"
-                    />
+                    >
+                        <option value="">Select City</option>
+                        {cities.map(city => (
+                            <option key={city.id} value={city.id}>
+                                {city.name}
+                            </option>
+                        ))}
+                    </select>
                 </div>
                 <div className="mb-4">
                     <label className="block mb-2">Gender</label>

@@ -58,9 +58,9 @@ const LoginForm = () => {
 
     return (
         <div id="login" className="w-1/2">
-            <div className="w-1/1 bg-gray-50 p-8 flex flex-col justify-center">
-                <h2 className="text-xl font-semibold mb-6 text-center">Sign In</h2>
-                <form>
+            <div className="w-1/1 bg-gray-50 p-8 pb-30 flex flex-col justify-center">
+                <h2 className="text-xl font-semibold mb-6 mb-10 mt-20 text-center">Sign In</h2>
+                <form className="pb-40">
                     <div className="mb-4">
                         <label
                             className="block text-gray-700 text-sm font-bold mb-2"
